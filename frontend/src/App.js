@@ -13,13 +13,23 @@ function App() {
     trafficPattern,
     budgetFocus,
     teamExperience,
-    architecture,
+    architecture
   });
 
   const serviceColors = {
     lambda: "#d0f0fd",
     ec2: "#ffe5b4",
-    ecs: "#e0d0fd",
+    ecs: "#e0d0fd"
+  };
+
+  // Collapsible state
+  const [openSections, setOpenSections] = useState({});
+
+  const toggleSection = (service, section) => {
+    setOpenSections((prev) => ({
+      ...prev,
+      [`${service}-${section}`]: !prev[`${service}-${section}`]
+    }));
   };
 
   return (
@@ -33,7 +43,6 @@ function App() {
       {/* User Inputs */}
       <div style={{ marginBottom: "20px" }}>
         <h3>Your Requirements</h3>
-
         <label>
           Traffic Pattern:
           <select
@@ -47,7 +56,6 @@ function App() {
           </select>
         </label>
         <br />
-
         <label>
           Budget Focus:
           <select
@@ -59,7 +67,6 @@ function App() {
           </select>
         </label>
         <br />
-
         <label>
           Team Experience:
           <select
@@ -72,7 +79,6 @@ function App() {
           </select>
         </label>
         <br />
-
         <label>
           Architecture Style:
           <select
@@ -93,78 +99,105 @@ function App() {
           padding: "15px",
           marginBottom: "20px",
           borderLeft: "5px solid #4CAF50",
+          transition: "all 0.5s",
         }}
       >
         <h2>Recommendation</h2>
         <p>
           <strong>{recommendation.service}</strong>
         </p>
-        <p>{recommendation.reason}</p>
+        <p
+          style={{
+            fontStyle: "italic",
+            opacity: 1,
+            animation: "fadeIn 1s ease"
+          }}
+        >
+          {recommendation.reason}
+        </p>
       </div>
 
-      {/* Service Comparison Cards */}
-      {Object.keys(data).map((service) => {
-        const isRecommended = recommendation.service
-          .toLowerCase()
-          .includes(service);
-        return (
-          <div
-            key={service}
-            className="card"
-            style={{
-              border: "1px solid #ccc",
-              marginBottom: "20px",
-              padding: "15px",
-              backgroundColor: isRecommended
-                ? "#d1f7d6"
-                : serviceColors[service],
-              boxShadow: isRecommended ? "0 0 10px #4CAF50" : "none",
-              transition: "transform 0.3s, box-shadow 0.3s",
-            }}
-          >
-            <h2>{service.toUpperCase()}</h2>
+      {/* Service Cards */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+          gap: "20px",
+        }}
+      >
+        {Object.keys(data).map((service) => {
+          const isRecommended = recommendation.service
+            .toLowerCase()
+            .includes(service);
+          return (
+            <div
+              key={service}
+              className="card"
+              style={{
+                border: "1px solid #ccc",
+                padding: "15px",
+                backgroundColor: isRecommended
+                  ? "#d1f7d6"
+                  : serviceColors[service],
+                boxShadow: isRecommended ? "0 0 10px #4CAF50" : "none",
+                transition: "transform 0.3s, box-shadow 0.3s",
+              }}
+            >
+              <h2>{service.toUpperCase()}</h2>
 
-            {isRecommended && (
-              <div
-                style={{
-                  backgroundColor: "#4CAF50",
-                  color: "#fff",
-                  padding: "5px 10px",
-                  borderRadius: "5px",
-                  display: "inline-block",
-                  marginBottom: "10px",
-                  fontSize: "0.9em",
-                }}
-              >
-                Recommended: {recommendation.reason}
-              </div>
-            )}
+              {isRecommended && (
+                <div
+                  style={{
+                    backgroundColor: "#4CAF50",
+                    color: "#fff",
+                    padding: "5px 10px",
+                    borderRadius: "5px",
+                    display: "inline-block",
+                    marginBottom: "10px",
+                    fontSize: "0.9em",
+                    transition: "all 0.5s ease",
+                  }}
+                >
+                  Recommended: {recommendation.reason}
+                </div>
+              )}
 
-            <Section title="Cost" items={data[service].cost} />
-            <Section title="Scalability" items={data[service].scalability} />
-            <Section
-              title="Operational Effort"
-              items={data[service].operationalEffort}
-            />
-            <Section title="Learning Curve" items={data[service].learningCurve} />
-            <Section title="Best Use Cases" items={data[service].bestUseCases} />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+              {/* Collapsible Sections */}
+              {Object.keys(data[service]).map((section) => {
+                const key = `${service}-${section}`;
+                return (
+                  <div key={key} style={{ marginBottom: "10px" }}>
+                    <strong
+                      style={{ cursor: "pointer" }}
+                      onClick={() => toggleSection(service, section)}
+                    >
+                      {section.charAt(0).toUpperCase() + section.slice(1)}
+                      {openSections[key] ? " ▼" : " ▶"}
+                    </strong>
+                    {openSections[key] && (
+                      <ul>
+                        {data[service][section].map((item, index) => (
+                          <li key={index}>{item}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
 
-// Section component
-function Section({ title, items }) {
-  return (
-    <div style={{ marginBottom: "10px" }}>
-      <strong>{title}:</strong>
-      <ul>
-        {items.map((item, index) => (
-          <li key={index}>{item}</li>
-        ))}
-      </ul>
+      {/* Simple fadeIn animation */}
+      <style>
+        {`
+          @keyframes fadeIn {
+            from {opacity: 0;}
+            to {opacity: 1;}
+          }
+        `}
+      </style>
     </div>
   );
 }

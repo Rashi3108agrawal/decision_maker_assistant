@@ -1,5 +1,5 @@
 // comparisonLogic.js
-// AWS Compute Comparison + Dynamic Recommendation
+// AWS Compute Comparison + Weighted Dynamic Recommendation
 
 export function getComparison() {
   return {
@@ -91,49 +91,58 @@ export function getComparison() {
   };
 }
 
-// -------------------- DYNAMIC RECOMMENDATION --------------------
-export const recommendationRules = [
-  {
-    conditions: { trafficPattern: ["low", "spiky"], architecture: ["event-driven"] },
-    service: "AWS Lambda",
-    reason:
-      "Lambda is ideal for low or unpredictable traffic and event-driven workloads. " +
-      "You only pay for execution, with minimal operational effort."
-  },
-  {
-    conditions: { trafficPattern: ["consistent"], teamExperience: ["beginner", "intermediate"] },
-    service: "Amazon ECS (Fargate)",
-    reason:
-      "ECS Fargate balances control and simplicity for consistent traffic and moderate experience."
-  },
-  {
-    conditions: { trafficPattern: ["high"], budgetFocus: ["predictable"], teamExperience: ["strong-devops"] },
-    service: "Amazon EC2",
-    reason:
-      "EC2 with Reserved Instances is cost-effective for high, predictable workloads with experienced teams."
-  },
-  {
-    conditions: { architecture: ["microservices"] },
-    service: "Amazon ECS",
-    reason:
-      "ECS is well-suited for microservices, offering container orchestration with manageable complexity."
-  }
-];
+// -------------------- WEIGHTED RECOMMENDATION --------------------
+const serviceWeights = {
+  lambda: 0,
+  ec2: 0,
+  ecs: 0
+};
 
 export function getRecommendation(inputs) {
-  for (const rule of recommendationRules) {
-    const isMatch = Object.keys(rule.conditions).every((key) => {
-      const ruleValues = rule.conditions[key];
-      return ruleValues.includes(inputs[key]);
-    });
-    if (isMatch) {
-      return { service: rule.service, reason: rule.reason };
-    }
-  }
-  // Default fallback
+  // Reset weights
+  for (let key in serviceWeights) serviceWeights[key] = 0;
+
+  // Assign weights based on input
+  const { trafficPattern, budgetFocus, teamExperience, architecture } = inputs;
+
+  // Traffic pattern
+  if (["low", "spiky"].includes(trafficPattern)) serviceWeights.lambda += 2;
+  if (trafficPattern === "consistent") serviceWeights.ecs += 2;
+  if (trafficPattern === "high") serviceWeights.ec2 += 2;
+
+  // Budget
+  if (budgetFocus === "lowest") serviceWeights.lambda += 1;
+  if (budgetFocus === "predictable") serviceWeights.ec2 += 1;
+
+  // Team experience
+  if (["beginner", "intermediate"].includes(teamExperience)) serviceWeights.lambda += 1;
+  if (teamExperience === "strong-devops") serviceWeights.ec2 += 1;
+
+  // Architecture
+  if (architecture === "event-driven") serviceWeights.lambda += 2;
+  if (architecture === "microservices") serviceWeights.ecs += 2;
+  if (architecture === "monolith") serviceWeights.ec2 += 1;
+
+  // Determine recommendation
+  const maxWeight = Math.max(...Object.values(serviceWeights));
+  const recommendedService = Object.keys(serviceWeights).find(
+    (key) => serviceWeights[key] === maxWeight
+  );
+
+  // Reasoning path
+  const reasoningPath = Object.entries(serviceWeights)
+    .map(([service, weight]) => `${service.toUpperCase()}: ${weight}`)
+    .join(" | ");
+
+  // Human-readable service name
+  const serviceNames = {
+    lambda: "AWS Lambda",
+    ec2: "Amazon EC2",
+    ecs: "Amazon ECS"
+  };
+
   return {
-    service: "AWS Lambda",
-    reason:
-      "Lambda is a safe default, offering automatic scaling, pay-per-use cost, and minimal infrastructure management."
+    service: serviceNames[recommendedService],
+    reason: `Based on weighted analysis: ${reasoningPath}`
   };
 }
