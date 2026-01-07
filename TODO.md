@@ -21,7 +21,7 @@
 
 ## 5. Documentation and Submission Prep (Priority 1)
 - [ ] Update README.md with screenshots placeholders, architecture diagram, setup guide, Kiro Integration section
-- [ ] Create blog-post-draft.md with outline, problem/solution, Kiro demo, screenshot placeholders
+- [x] Create blog-post-draft.md with outline, problem/solution, Kiro demo, screenshot placeholders (created as aws-builder-center-blog-post.md)
 
 ## Followup Steps
 - [ ] Run tests and verify app functionality
