@@ -56,6 +56,3 @@ Thumbs.db
 # Build directories
 build/
 dist/
-
-# Kiro specific (if not needed in repo)
-.kiro/
