@@ -118,5 +118,35 @@
     },
     "service": "Amazon ECS",
     "reason": "ECS Fargate offers predictable pricing without server management complexity. Single container deployment is beginner-friendly. Handles high traffic with auto-scaling."
+  },
+  {
+    "conditions": {
+      "trafficPattern": ["spiky", "consistent"],
+      "budgetFocus": ["lowest"],
+      "teamExperience": ["intermediate"],
+      "architecture": ["microservices"]
+    },
+    "service": "AWS Fargate",
+    "reason": "Fargate provides serverless container execution with pay-per-use pricing, ideal for variable workloads. No EC2 management needed, perfect for intermediate teams handling microservices."
+  },
+  {
+    "conditions": {
+      "trafficPattern": ["consistent"],
+      "budgetFocus": ["predictable"],
+      "teamExperience": ["beginner", "intermediate"],
+      "architecture": ["microservices"]
+    },
+    "service": "AWS Fargate",
+    "reason": "Fargate eliminates infrastructure management while providing predictable per-second billing. Beginner-friendly for containerized apps, scales automatically for consistent traffic."
+  },
+  {
+    "conditions": {
+      "trafficPattern": ["low", "spiky"],
+      "budgetFocus": ["lowest"],
+      "teamExperience": ["strong-devops"],
+      "architecture": ["microservices"]
+    },
+    "service": "AWS Fargate",
+    "reason": "Fargate's granular pricing optimizes costs for variable traffic without idle EC2 charges. Strong DevOps teams can leverage advanced container orchestration features."
   }
 ]

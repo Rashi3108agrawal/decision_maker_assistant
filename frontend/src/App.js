@@ -1,6 +1,6 @@
-import { getRecommendation, getComparison, fetchKiroRules } from "./comparisonLogic";
-import { useState, useEffect } from "react";
-import TradeoffChart from "./tradeoffChart";
+import { getRecommendation, getComparison, fetchKiroRules, estimateCosts } from "./comparisonLogic";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+const TradeoffChart = lazy(() => import("./tradeoffChart"));
 
 function App() {
   const data = getComparison();
@@ -19,6 +19,8 @@ function App() {
   const recommendation = kiroRules.length
     ? getRecommendation({ trafficPattern, budgetFocus, teamExperience, architecture }, kiroRules)
     : { top3: [], reasoningPath: "" };
+
+  const costEstimates = estimateCosts({ trafficPattern, budgetFocus });
 
   // Dynamic metrics based on recommendation scores (scale 1-10)
   const getServiceMetrics = (serviceName) => {
@@ -41,6 +43,8 @@ function App() {
 
   // Collapsible state
   const [openSections, setOpenSections] = useState({});
+  const [kiroDemoMode, setKiroDemoMode] = useState(false);
+  const [matchedRules, setMatchedRules] = useState([]);
 
   const toggleSection = (service, section) => {
     setOpenSections((prev) => ({
@@ -53,6 +57,21 @@ const handleInputChange = (setter) => (value) => {
   setter(value);
   setAiExplanation(""); // reset AI explanation
 };
+
+  // Calculate matched rules for demo mode
+  useEffect(() => {
+    if (kiroRules.length > 0) {
+      const inputs = { trafficPattern, budgetFocus, teamExperience, architecture };
+      const matched = kiroRules.filter(rule => {
+        let matchScore = 0;
+        Object.keys(rule.conditions).forEach(key => {
+          if (rule.conditions[key].includes(inputs[key])) matchScore++;
+        });
+        return matchScore > 0;
+      });
+      setMatchedRules(matched);
+    }
+  }, [trafficPattern, budgetFocus, teamExperience, architecture, kiroRules]);
 
   return (
     <div style={{
@@ -188,6 +207,37 @@ const handleInputChange = (setter) => (value) => {
             </div>
           </div>
 
+          {/* Cost Estimation */}
+          <div style={{ marginBottom: "40px", padding: "20px", background: "#f8f9fa", borderRadius: "10px" }}>
+            <h3 style={{ color: "#333", marginBottom: "15px", textAlign: "center" }}>Estimated Monthly Costs</h3>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "15px"
+            }}>
+              {Object.entries(costEstimates).map(([service, cost]) => (
+                <div key={service} style={{
+                  background: "#fff",
+                  padding: "15px",
+                  borderRadius: "8px",
+                  textAlign: "center",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                }}>
+                  <h4 style={{ margin: "0 0 10px 0", color: "#333" }}>{service.toUpperCase()}</h4>
+                  <p style={{ fontSize: "1.2em", fontWeight: "bold", color: "#28a745", margin: 0 }}>
+                    ${cost}/month
+                  </p>
+                  <p style={{ fontSize: "0.8em", color: "#666", margin: "5px 0 0 0" }}>
+                    Based on {trafficPattern} traffic
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: "0.8em", color: "#666", textAlign: "center", marginTop: "15px" }}>
+              * Estimates are simplified and for demonstration purposes. Actual costs may vary.
+            </p>
+          </div>
+
       {/* Recommendation */}
       <div
   style={{
@@ -251,7 +301,7 @@ const handleInputChange = (setter) => (value) => {
         }}
       >
         {Object.keys(data).map((service) => {
-          const serviceName = service === "lambda" ? "AWS Lambda" : service === "ec2" ? "Amazon EC2" : "Amazon ECS";
+          const serviceName = service === "lambda" ? "AWS Lambda" : service === "ec2" ? "Amazon EC2" : service === "ecs" ? "Amazon ECS" : "AWS Fargate";
           const rec = recommendation?.top3?.find(rec => rec.service === serviceName);
           const isRecommended = !!rec;
           const confidence = rec?.confidence || 0;
@@ -313,7 +363,9 @@ const handleInputChange = (setter) => (value) => {
 
               {/* Mini Radar Chart */}
               <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
-                <TradeoffChart metrics={getServiceMetrics(serviceName)} isHovered={isHovered} />
+                <Suspense fallback={<div style={{ width: '150px', height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>}>
+                  <TradeoffChart metrics={getServiceMetrics(serviceName)} isHovered={isHovered} />
+                </Suspense>
               </div>
 
               {/* Collapsible Sections */}

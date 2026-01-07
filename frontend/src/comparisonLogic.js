@@ -58,6 +58,25 @@ export function getComparison() {
       bestUseCases: [
         "Microservices"
       ]
+    },
+    fargate: {
+      cost: [
+        "Pay for vCPU and memory per second",
+        "No EC2 instance costs"
+      ],
+      scalability: [
+        "Automatic scaling via ECS"
+      ],
+      operationalEffort: [
+        "Low – serverless containers"
+      ],
+      learningCurve: [
+        "Moderate"
+      ],
+      bestUseCases: [
+        "Containerized microservices",
+        "Variable workloads without EC2 management"
+      ]
     }
   };
 }
@@ -74,6 +93,26 @@ export async function fetchKiroRules() {
   }
 }
 
+// -------------------- COST ESTIMATION --------------------
+// Mock AWS pricing formulas (simplified for demo)
+export function estimateCosts(inputs) {
+  const { trafficPattern, budgetFocus } = inputs;
+  const baseRequests = trafficPattern === "low" ? 100000 : trafficPattern === "spiky" ? 500000 : trafficPattern === "consistent" ? 1000000 : 2000000;
+  const computeTime = trafficPattern === "high" ? 200 : 100; // GB-s per month
+
+  const lambdaCost = (baseRequests * 0.0000002) + (computeTime * 0.00001667); // $0.20 per 1M requests + $0.00001667 per GB-s
+  const ec2Cost = budgetFocus === "lowest" ? 50 : 100; // Mock monthly cost
+  const ecsCost = budgetFocus === "lowest" ? 60 : 120; // Mock monthly cost
+  const fargateCost = (baseRequests * 0.00000025) + (computeTime * 0.00001417); // Approximate Fargate pricing
+
+  return {
+    lambda: Math.round(lambdaCost * 100) / 100,
+    ec2: ec2Cost,
+    ecs: ecsCost,
+    fargate: Math.round(fargateCost * 100) / 100
+  };
+}
+
 // -------------------- RECOMMENDATION LOGIC --------------------
 export function getRecommendation(inputs, kiroRules = []) {
   if (!Array.isArray(kiroRules) || kiroRules.length === 0) {
@@ -83,7 +122,7 @@ export function getRecommendation(inputs, kiroRules = []) {
     };
   }
 
-  const scores = { lambda: 0, ec2: 0, ecs: 0 };
+  const scores = { lambda: 0, ec2: 0, ecs: 0, fargate: 0 };
   const reasoningPath = [];
 
   kiroRules.forEach((rule) => {
@@ -99,6 +138,8 @@ export function getRecommendation(inputs, kiroRules = []) {
       ? "lambda"
       : rule.service.toLowerCase().includes("ec2")
       ? "ec2"
+      : rule.service.toLowerCase().includes("fargate")
+      ? "fargate"
       : "ecs";
 
     scores[serviceKey] += matchScore;
@@ -113,7 +154,8 @@ export function getRecommendation(inputs, kiroRules = []) {
   const serviceNames = {
     lambda: "AWS Lambda",
     ec2: "Amazon EC2",
-    ecs: "Amazon ECS"
+    ecs: "Amazon ECS",
+    fargate: "AWS Fargate"
   };
 
   // Calculate total possible score (number of rules)
