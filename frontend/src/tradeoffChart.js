@@ -18,18 +18,45 @@ ChartJS.register(
   Legend
 );
 
-export default function TradeoffChart({ metrics }) {
+export default function TradeoffChart({ metrics, isHovered = false }) {
   const data = {
-    labels: ["Cost Efficiency", "Scalability", "Operational Ease"],
+    labels: ["Cost Efficiency", "Scalability", "Operational Effort"],
     datasets: [
       {
         label: metrics.name,
         data: [metrics.cost, metrics.scalability, metrics.ops],
-        backgroundColor: "rgba(54, 162, 235, 0.2)",
-        borderColor: "rgba(54, 162, 235, 1)"
+        backgroundColor: isHovered ? "rgba(255, 99, 132, 0.2)" : "rgba(54, 162, 235, 0.2)",
+        borderColor: isHovered ? "rgba(255, 99, 132, 1)" : "rgba(54, 162, 235, 1)",
+        borderWidth: isHovered ? 3 : 1
       }
     ]
   };
 
-  return <Radar data={data} />;
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        enabled: true
+      }
+    },
+    scales: {
+      r: {
+        beginAtZero: true,
+        max: 10,
+        ticks: {
+          stepSize: 2
+        }
+      }
+    }
+  };
+
+  return (
+    <div style={{ width: '150px', height: '150px' }}>
+      <Radar data={data} options={options} />
+    </div>
+  );
 }

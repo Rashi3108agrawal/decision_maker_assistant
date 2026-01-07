@@ -78,8 +78,7 @@ export async function fetchKiroRules() {
 export function getRecommendation(inputs, kiroRules = []) {
   if (!Array.isArray(kiroRules) || kiroRules.length === 0) {
     return {
-      service: "Loading...",
-      reason: "Evaluating rules",
+      top3: [],
       reasoningPath: ""
     };
   }
@@ -111,19 +110,28 @@ export function getRecommendation(inputs, kiroRules = []) {
     }
   });
 
-  const winner = Object.keys(scores).reduce((a, b) =>
-    scores[a] > scores[b] ? a : b
-  );
-
   const serviceNames = {
     lambda: "AWS Lambda",
     ec2: "Amazon EC2",
     ecs: "Amazon ECS"
   };
 
+  // Calculate total possible score (number of rules)
+  const totalPossible = kiroRules.length;
+  const maxScore = Math.max(...Object.values(scores));
+
+  // Create top3 with confidence
+  const top3 = Object.keys(scores)
+    .map(key => ({
+      service: serviceNames[key],
+      score: scores[key],
+      confidence: maxScore > 0 ? Math.round((scores[key] / maxScore) * 100) : 0
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
   return {
-    service: serviceNames[winner],
-    reason: "Rule-based AI recommendation",
+    top3,
     reasoningPath: reasoningPath.join(" | ")
   };
 }

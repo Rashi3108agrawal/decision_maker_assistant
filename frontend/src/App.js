@@ -1,5 +1,6 @@
 import { getRecommendation, getComparison, fetchKiroRules } from "./comparisonLogic";
 import { useState, useEffect } from "react";
+import TradeoffChart from "./tradeoffChart";
 
 function App() {
   const data = getComparison();
@@ -17,7 +18,20 @@ function App() {
 
   const recommendation = kiroRules.length
     ? getRecommendation({ trafficPattern, budgetFocus, teamExperience, architecture }, kiroRules)
-    : getRecommendation({ trafficPattern, budgetFocus, teamExperience, architecture }, kiroRules);
+    : { top3: [], reasoningPath: "" };
+
+  // Dynamic metrics based on recommendation scores (scale 1-10)
+  const getServiceMetrics = (serviceName) => {
+    const baseMetrics = {
+      "AWS Lambda": { name: "Lambda", cost: 8, scalability: 9, ops: 9 },
+      "Amazon EC2": { name: "EC2", cost: 6, scalability: 7, ops: 4 },
+      "Amazon ECS": { name: "ECS", cost: 7, scalability: 8, ops: 6 }
+    };
+    return baseMetrics[serviceName] || { name: serviceName, cost: 5, scalability: 5, ops: 5 };
+  };
+
+  // Hover state for interactive effects
+  const [hoveredService, setHoveredService] = useState(null);
 
   const serviceColors = {
     lambda: "#d0f0fd",
@@ -41,53 +55,138 @@ const handleInputChange = (setter) => (value) => {
 };
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h1>AWS Compute Decision Assistant</h1>
-      <p>
-        This tool helps backend developers choose the right AWS compute service
-        based on traffic, budget, team experience, and architecture needs.
-      </p>
+    <div style={{
+      padding: "30px",
+      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+      background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+      minHeight: "100vh"
+    }}>
+      <div style={{
+        maxWidth: "1200px",
+        margin: "0 auto",
+        background: "#fff",
+        borderRadius: "20px",
+        boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
+        overflow: "hidden"
+      }}>
+        <div style={{
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          color: "#fff",
+          padding: "40px",
+          textAlign: "center"
+        }}>
+          <h1 style={{ margin: "0 0 15px 0", fontSize: "3em", fontWeight: "300" }}>AWS Compute Decision Assistant</h1>
+          <p style={{ fontSize: "1.2em", opacity: 0.9, margin: 0 }}>
+            Choose the perfect AWS compute service for your backend needs with AI-powered recommendations
+          </p>
+        </div>
 
-      {/* User Inputs */}
-      <div style={{ marginBottom: "20px" }}>
-        <h3>Your Requirements</h3>
-        <label>
-  Traffic Pattern:
-  <select value={trafficPattern} onChange={(e) => handleInputChange(setTrafficPattern)(e.target.value)}>
-    <option value="low">Low</option>
-    <option value="spiky">Spiky</option>
-    <option value="consistent">Consistent</option>
-    <option value="high">High</option>
-  </select>
-</label>
+        <div style={{ padding: "40px" }}>
+          {/* User Inputs */}
+          <div style={{ marginBottom: "40px" }}>
+            <h3 style={{ color: "#333", marginBottom: "25px", fontSize: "1.5em", textAlign: "center" }}>Your Requirements</h3>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+              gap: "20px"
+            }}>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <label style={{ fontWeight: "bold", marginBottom: "8px", color: "#555" }}>
+                  Traffic Pattern:
+                </label>
+                <select
+                  value={trafficPattern}
+                  onChange={(e) => handleInputChange(setTrafficPattern)(e.target.value)}
+                  style={{
+                    padding: "12px",
+                    borderRadius: "8px",
+                    border: "2px solid #e0e0e0",
+                    fontSize: "1em",
+                    transition: "border-color 0.3s ease",
+                    background: "#fff"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "#667eea"}
+                  onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                >
+                  <option value="low">Low</option>
+                  <option value="spiky">Spiky</option>
+                  <option value="consistent">Consistent</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
 
-<label>
-  Budget Focus:
-  <select value={budgetFocus} onChange={(e) => handleInputChange(setBudgetFocus)(e.target.value)}>
-    <option value="lowest">Lowest Cost</option>
-    <option value="predictable">Predictable Cost</option>
-  </select>
-</label>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <label style={{ fontWeight: "bold", marginBottom: "8px", color: "#555" }}>
+                  Budget Focus:
+                </label>
+                <select
+                  value={budgetFocus}
+                  onChange={(e) => handleInputChange(setBudgetFocus)(e.target.value)}
+                  style={{
+                    padding: "12px",
+                    borderRadius: "8px",
+                    border: "2px solid #e0e0e0",
+                    fontSize: "1em",
+                    transition: "border-color 0.3s ease",
+                    background: "#fff"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "#667eea"}
+                  onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                >
+                  <option value="lowest">Lowest Cost</option>
+                  <option value="predictable">Predictable Cost</option>
+                </select>
+              </div>
 
-<label>
-  Team Experience:
-  <select value={teamExperience} onChange={(e) => handleInputChange(setTeamExperience)(e.target.value)}>
-    <option value="beginner">Beginner</option>
-    <option value="intermediate">Intermediate</option>
-    <option value="strong-devops">Strong DevOps</option>
-  </select>
-</label>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <label style={{ fontWeight: "bold", marginBottom: "8px", color: "#555" }}>
+                  Team Experience:
+                </label>
+                <select
+                  value={teamExperience}
+                  onChange={(e) => handleInputChange(setTeamExperience)(e.target.value)}
+                  style={{
+                    padding: "12px",
+                    borderRadius: "8px",
+                    border: "2px solid #e0e0e0",
+                    fontSize: "1em",
+                    transition: "border-color 0.3s ease",
+                    background: "#fff"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "#667eea"}
+                  onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                >
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="strong-devops">Strong DevOps</option>
+                </select>
+              </div>
 
-<label>
-  Architecture Style:
-  <select value={architecture} onChange={(e) => handleInputChange(setArchitecture)(e.target.value)}>
-    <option value="event-driven">Event-driven</option>
-    <option value="microservices">Microservices</option>
-    <option value="monolith">Monolith</option>
-  </select>
-</label>
-
-      </div>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <label style={{ fontWeight: "bold", marginBottom: "8px", color: "#555" }}>
+                  Architecture Style:
+                </label>
+                <select
+                  value={architecture}
+                  onChange={(e) => handleInputChange(setArchitecture)(e.target.value)}
+                  style={{
+                    padding: "12px",
+                    borderRadius: "8px",
+                    border: "2px solid #e0e0e0",
+                    fontSize: "1em",
+                    transition: "border-color 0.3s ease",
+                    background: "#fff"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "#667eea"}
+                  onBlur={(e) => e.target.style.borderColor = "#e0e0e0"}
+                >
+                  <option value="event-driven">Event-driven</option>
+                  <option value="microservices">Microservices</option>
+                  <option value="monolith">Monolith</option>
+                </select>
+              </div>
+            </div>
+          </div>
 
       {/* Recommendation */}
       <div
@@ -143,67 +242,105 @@ const handleInputChange = (setter) => (value) => {
   </p>
 </div>
 
-      {/* Service Cards */}
+      {/* Service Cards with Radar Charts */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: "20px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+          gap: "25px",
         }}
       >
         {Object.keys(data).map((service) => {
-          const isRecommended = recommendation.service
-            .toLowerCase()
-            .includes(service);
+          const serviceName = service === "lambda" ? "AWS Lambda" : service === "ec2" ? "Amazon EC2" : "Amazon ECS";
+          const rec = recommendation?.top3?.find(rec => rec.service === serviceName);
+          const isRecommended = !!rec;
+          const confidence = rec?.confidence || 0;
+          const rank = isRecommended ? recommendation.top3.findIndex(r => r.service === serviceName) + 1 : null;
+          const isHovered = hoveredService === service;
+
           return (
             <div
               key={service}
               className="card"
               style={{
-                border: "1px solid #ccc",
-                padding: "15px",
+                border: "2px solid #e0e0e0",
+                padding: "20px",
                 backgroundColor: isRecommended
-                  ? "#d1f7d6"
+                  ? `rgba(76, 175, 80, ${0.1 + (3 - rank) * 0.1})`
                   : serviceColors[service],
-                boxShadow: isRecommended ? "0 0 10px #4CAF50" : "none",
-                transition: "transform 0.3s, box-shadow 0.3s",
+                boxShadow: isRecommended ? `0 0 15px rgba(76, 175, 80, ${0.3 + (3 - rank) * 0.1})` : "0 2px 8px rgba(0,0,0,0.1)",
+                transition: "all 0.3s ease",
+                transform: isHovered ? "translateY(-5px)" : "translateY(0)",
+                borderRadius: "10px",
+                position: "relative",
+                overflow: "hidden"
               }}
+              onMouseEnter={() => setHoveredService(service)}
+              onMouseLeave={() => setHoveredService(null)}
             >
-              <h2>{service.toUpperCase()}</h2>
-
               {isRecommended && (
                 <div
                   style={{
+                    position: "absolute",
+                    top: "10px",
+                    right: "10px",
                     backgroundColor: "#4CAF50",
                     color: "#fff",
                     padding: "5px 10px",
-                    borderRadius: "5px",
-                    display: "inline-block",
-                    marginBottom: "10px",
-                    fontSize: "0.9em",
-                    transition: "all 0.5s ease",
+                    borderRadius: "15px",
+                    fontSize: "0.8em",
+                    fontWeight: "bold",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
                   }}
                 >
-                  Recommended: {recommendation.reason}
+                  #{rank} Recommended
                 </div>
               )}
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+                <h2 style={{ margin: 0, color: "#333", fontSize: "1.5em" }}>{service.toUpperCase()}</h2>
+                <div style={{
+                  fontSize: "1em",
+                  color: confidence > 0 ? "#28a745" : "#6c757d",
+                  fontWeight: "bold",
+                  background: confidence > 0 ? "#d4edda" : "#f8f9fa",
+                  padding: "5px 10px",
+                  borderRadius: "20px"
+                }}>
+                  {confidence}% Confidence
+                </div>
+              </div>
+
+              {/* Mini Radar Chart */}
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
+                <TradeoffChart metrics={getServiceMetrics(serviceName)} isHovered={isHovered} />
+              </div>
 
               {/* Collapsible Sections */}
               {Object.keys(data[service]).map((section) => {
                 const key = `${service}-${section}`;
                 return (
                   <div key={key} style={{ marginBottom: "10px" }}>
-                    <strong
-                      style={{ cursor: "pointer" }}
+                    <button
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "1em",
+                        fontWeight: "bold",
+                        color: "#007bff",
+                        textAlign: "left",
+                        padding: "5px 0"
+                      }}
                       onClick={() => toggleSection(service, section)}
                     >
                       {section.charAt(0).toUpperCase() + section.slice(1)}
                       {openSections[key] ? " ▼" : " ▶"}
-                    </strong>
+                    </button>
                     {openSections[key] && (
-                      <ul>
+                      <ul style={{ marginLeft: "20px", color: "#555" }}>
                         {data[service][section].map((item, index) => (
-                          <li key={index}>{item}</li>
+                          <li key={index} style={{ marginBottom: "5px" }}>{item}</li>
                         ))}
                       </ul>
                     )}
@@ -215,15 +352,17 @@ const handleInputChange = (setter) => (value) => {
         })}
       </div>
 
-      {/* Simple fadeIn animation */}
-      <style>
-        {`
-          @keyframes fadeIn {
-            from {opacity: 0;}
-            to {opacity: 1;}
-          }
-        `}
-      </style>
+          {/* Simple fadeIn animation */}
+          <style>
+            {`
+              @keyframes fadeIn {
+                from {opacity: 0;}
+                to {opacity: 1;}
+              }
+            `}
+          </style>
+        </div>
+      </div>
     </div>
   );
 }
