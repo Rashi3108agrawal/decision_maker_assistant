@@ -1,5 +1,5 @@
-import { getComparison, getRecommendation } from "./comparisonLogic";
-import { useState } from "react";
+import { getRecommendation, getComparison, fetchKiroRules } from "./comparisonLogic";
+import { useState, useEffect } from "react";
 
 function App() {
   const data = getComparison();
@@ -8,13 +8,16 @@ function App() {
   const [budgetFocus, setBudgetFocus] = useState("lowest");
   const [teamExperience, setTeamExperience] = useState("beginner");
   const [architecture, setArchitecture] = useState("event-driven");
+  const [kiroRules, setKiroRules] = useState([]);
+  const [aiExplanation, setAiExplanation] = useState("");
 
-  const recommendation = getRecommendation({
-    trafficPattern,
-    budgetFocus,
-    teamExperience,
-    architecture
-  });
+  useEffect(() => {
+    fetchKiroRules().then(setKiroRules);
+  }, []);
+
+  const recommendation = kiroRules.length
+    ? getRecommendation({ trafficPattern, budgetFocus, teamExperience, architecture }, kiroRules)
+    : getRecommendation({ trafficPattern, budgetFocus, teamExperience, architecture }, kiroRules);
 
   const serviceColors = {
     lambda: "#d0f0fd",
@@ -31,6 +34,11 @@ function App() {
       [`${service}-${section}`]: !prev[`${service}-${section}`]
     }));
   };
+  // Updates an input value and clears previous AI explanation
+const handleInputChange = (setter) => (value) => {
+  setter(value);
+  setAiExplanation(""); // reset AI explanation
+};
 
   return (
     <div style={{ padding: "20px", fontFamily: "Arial" }}>
@@ -44,78 +52,96 @@ function App() {
       <div style={{ marginBottom: "20px" }}>
         <h3>Your Requirements</h3>
         <label>
-          Traffic Pattern:
-          <select
-            value={trafficPattern}
-            onChange={(e) => setTrafficPattern(e.target.value)}
-          >
-            <option value="low">Low</option>
-            <option value="spiky">Spiky</option>
-            <option value="consistent">Consistent</option>
-            <option value="high">High</option>
-          </select>
-        </label>
-        <br />
-        <label>
-          Budget Focus:
-          <select
-            value={budgetFocus}
-            onChange={(e) => setBudgetFocus(e.target.value)}
-          >
-            <option value="lowest">Lowest Cost</option>
-            <option value="predictable">Predictable Cost</option>
-          </select>
-        </label>
-        <br />
-        <label>
-          Team Experience:
-          <select
-            value={teamExperience}
-            onChange={(e) => setTeamExperience(e.target.value)}
-          >
-            <option value="beginner">Beginner</option>
-            <option value="intermediate">Intermediate</option>
-            <option value="strong-devops">Strong DevOps</option>
-          </select>
-        </label>
-        <br />
-        <label>
-          Architecture Style:
-          <select
-            value={architecture}
-            onChange={(e) => setArchitecture(e.target.value)}
-          >
-            <option value="event-driven">Event-driven</option>
-            <option value="microservices">Microservices</option>
-            <option value="monolith">Monolith</option>
-          </select>
-        </label>
+  Traffic Pattern:
+  <select value={trafficPattern} onChange={(e) => handleInputChange(setTrafficPattern)(e.target.value)}>
+    <option value="low">Low</option>
+    <option value="spiky">Spiky</option>
+    <option value="consistent">Consistent</option>
+    <option value="high">High</option>
+  </select>
+</label>
+
+<label>
+  Budget Focus:
+  <select value={budgetFocus} onChange={(e) => handleInputChange(setBudgetFocus)(e.target.value)}>
+    <option value="lowest">Lowest Cost</option>
+    <option value="predictable">Predictable Cost</option>
+  </select>
+</label>
+
+<label>
+  Team Experience:
+  <select value={teamExperience} onChange={(e) => handleInputChange(setTeamExperience)(e.target.value)}>
+    <option value="beginner">Beginner</option>
+    <option value="intermediate">Intermediate</option>
+    <option value="strong-devops">Strong DevOps</option>
+  </select>
+</label>
+
+<label>
+  Architecture Style:
+  <select value={architecture} onChange={(e) => handleInputChange(setArchitecture)(e.target.value)}>
+    <option value="event-driven">Event-driven</option>
+    <option value="microservices">Microservices</option>
+    <option value="monolith">Monolith</option>
+  </select>
+</label>
+
       </div>
 
       {/* Recommendation */}
       <div
-        style={{
-          background: "#f0f8ff",
-          padding: "15px",
-          marginBottom: "20px",
-          borderLeft: "5px solid #4CAF50",
-          transition: "all 0.5s",
-        }}
-      >
-        <h2>Recommendation</h2>
-        <p>
-          <strong>{recommendation.service}</strong>
-        </p>
-        <p
-          style={{
-            fontStyle: "italic",
-            opacity: 1,
-            animation: "fadeIn 1s ease"
-          }}
-        >
-          {recommendation.reason}
-        </p>
-      </div>
+  style={{
+    background: "#f0f8ff",
+    padding: "15px",
+    marginBottom: "20px",
+    borderLeft: "5px solid #4CAF50",
+    transition: "all 0.5s"
+  }}
+>
+<button
+  onClick={async () => {
+    const response = await fetch("http://localhost:5000/api/kiroExplain", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        inputs: { trafficPattern, budgetFocus, teamExperience, architecture }
+      })
+    });
+
+    const data = await response.json();
+    setAiExplanation(data.explanation);
+  }}
+>
+  Explain My Recommendation (AI)
+</button>
+
+{aiExplanation && (
+  <div
+    style={{
+      background: "#fff8dc",
+      padding: "15px",
+      marginTop: "20px",
+      borderLeft: "5px solid #ff9800"
+    }}
+  >
+    <h3>AI Explanation (Kiro-powered)</h3>
+    <p style={{ whiteSpace: "pre-line" }}>{aiExplanation}</p>
+  </div>
+)}
+
+
+  <h2>Recommendation</h2>
+  <p>
+    <strong>{recommendation?.service || "Loading..."}</strong>
+
+  </p>
+  <p style={{ fontStyle: "italic" }}>{recommendation.reason}</p>
+  <p style={{ fontSize: "0.8em", color: "#555" }}>
+    <strong>Reasoning path:</strong> {recommendation?.reasoningPath || "Evaluating rules..."}
+
+  </p>
+</div>
 
       {/* Service Cards */}
       <div

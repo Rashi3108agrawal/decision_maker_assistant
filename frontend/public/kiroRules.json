@@ -1,0 +1,122 @@
+[
+  {
+    "conditions": {
+      "trafficPattern": ["spiky"],
+      "budgetFocus": ["lowest"],
+      "teamExperience": ["beginner", "intermediate"],
+      "architecture": ["event-driven"]
+    },
+    "service": "AWS Lambda",
+    "reason": "Perfect match for spiky traffic with pay-per-execution pricing. Zero infrastructure management required for beginner teams. Event-driven architecture aligns naturally with Lambda's execution model."
+  },
+  {
+    "conditions": {
+      "trafficPattern": ["low", "spiky"],
+      "budgetFocus": ["lowest"],
+      "teamExperience": ["beginner"],
+      "architecture": ["microservices", "monolith"]
+    },
+    "service": "AWS Lambda",
+    "reason": "Most cost-effective for low/spiky traffic with no idle costs. Minimal operational overhead perfect for beginner teams. Can break monoliths into Lambda functions gradually."
+  },
+  {
+    "conditions": {
+      "trafficPattern": ["consistent", "high"],
+      "budgetFocus": ["predictable"],
+      "teamExperience": ["strong-devops"],
+      "architecture": ["monolith"]
+    },
+    "service": "Amazon EC2",
+    "reason": "Reserved instances provide predictable costs for consistent high traffic. Strong DevOps teams can optimize EC2 effectively. Monolithic applications run naturally on traditional servers."
+  },
+  {
+    "conditions": {
+      "trafficPattern": ["consistent"],
+      "budgetFocus": ["predictable"],
+      "teamExperience": ["intermediate", "strong-devops"],
+      "architecture": ["microservices"]
+    },
+    "service": "Amazon ECS",
+    "reason": "Balanced operational complexity with predictable Fargate pricing. Excellent for microservices with container orchestration. Good middle ground for experienced teams."
+  },
+  {
+    "conditions": {
+      "trafficPattern": ["high"],
+      "budgetFocus": ["lowest"],
+      "teamExperience": ["strong-devops"],
+      "architecture": ["microservices", "monolith"]
+    },
+    "service": "Amazon EC2",
+    "reason": "Reserved instances offer lowest cost for high consistent traffic. Strong DevOps teams can manage complex deployments and optimizations effectively."
+  },
+  {
+    "conditions": {
+      "trafficPattern": ["spiky", "consistent"],
+      "budgetFocus": ["predictable"],
+      "teamExperience": ["intermediate"],
+      "architecture": ["microservices"]
+    },
+    "service": "Amazon ECS",
+    "reason": "ECS Fargate provides predictable pricing with automatic scaling. Intermediate teams can handle container management. Perfect for microservices architecture."
+  },
+  {
+    "conditions": {
+      "trafficPattern": ["low"],
+      "budgetFocus": ["predictable"],
+      "teamExperience": ["beginner", "intermediate"],
+      "architecture": ["monolith", "microservices"]
+    },
+    "service": "AWS Lambda",
+    "reason": "Low traffic keeps Lambda costs minimal and predictable. Simple deployment model suits beginner/intermediate teams. Can handle both monolithic functions and microservices."
+  },
+  {
+    "conditions": {
+      "trafficPattern": ["high", "consistent"],
+      "budgetFocus": ["lowest"],
+      "teamExperience": ["intermediate"],
+      "architecture": ["microservices"]
+    },
+    "service": "Amazon ECS",
+    "reason": "ECS on EC2 with Reserved Instances offers cost optimization for high traffic. Container orchestration suits microservices. Manageable complexity for intermediate teams."
+  },
+  {
+    "conditions": {
+      "trafficPattern": ["spiky"],
+      "budgetFocus": ["predictable"],
+      "teamExperience": ["strong-devops"],
+      "architecture": ["event-driven", "microservices"]
+    },
+    "service": "AWS Lambda",
+    "reason": "Lambda's auto-scaling handles spikes efficiently. Predictable costs with provisioned concurrency if needed. Strong DevOps teams can optimize Lambda performance and costs."
+  },
+  {
+    "conditions": {
+      "trafficPattern": ["consistent"],
+      "budgetFocus": ["lowest"],
+      "teamExperience": ["beginner"],
+      "architecture": ["monolith"]
+    },
+    "service": "Amazon ECS",
+    "reason": "ECS Fargate eliminates server management for beginners while providing cost-effective consistent pricing. Single container deployment suits monolithic applications."
+  },
+  {
+    "conditions": {
+      "trafficPattern": ["low", "spiky"],
+      "budgetFocus": ["predictable"],
+      "teamExperience": ["strong-devops"],
+      "architecture": ["microservices"]
+    },
+    "service": "Amazon ECS",
+    "reason": "ECS provides predictable Fargate pricing with fine-grained control. Strong DevOps teams can optimize container resources. Excellent microservices orchestration."
+  },
+  {
+    "conditions": {
+      "trafficPattern": ["high"],
+      "budgetFocus": ["predictable"],
+      "teamExperience": ["beginner"],
+      "architecture": ["monolith"]
+    },
+    "service": "Amazon ECS",
+    "reason": "ECS Fargate offers predictable pricing without server management complexity. Single container deployment is beginner-friendly. Handles high traffic with auto-scaling."
+  }
+]

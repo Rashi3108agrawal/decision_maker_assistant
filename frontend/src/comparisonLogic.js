@@ -1,140 +1,120 @@
-// comparisonLogic.js
-// AWS Compute Comparison + Weighted Dynamic Recommendation
-
+// -------------------- COMPARISON DATA --------------------
 export function getComparison() {
   return {
     lambda: {
       cost: [
         "Pay-per-execution (requests + compute time)",
-        "Free tier: 1M requests/month + 400,000 GB-seconds",
-        "Cost-effective for sporadic workloads, can be expensive for high-volume"
+        "Free tier: 1M requests/month",
+        "Cost-effective for spiky workloads"
       ],
       scalability: [
-        "Automatic scaling from 0 to 1000+ concurrent executions",
-        "Near-instant scaling response",
-        "Built-in fault tolerance across AZs"
+        "Automatic scaling",
+        "Near-instant scale-up"
       ],
       operationalEffort: [
-        "Minimal - AWS manages all infrastructure",
-        "No server patching or OS updates",
-        "Focus purely on application code"
+        "No server management",
+        "Fully managed by AWS"
       ],
       learningCurve: [
-        "Low to moderate",
-        "Requires understanding of event-driven architecture",
-        "Stateless programming model may require architectural changes"
+        "Low to moderate"
       ],
       bestUseCases: [
-        "API backends with variable traffic",
-        "Event processing (S3, DynamoDB, etc.)",
-        "Scheduled tasks and cron jobs",
-        "Microservices with clear boundaries"
+        "Event-driven APIs",
+        "Variable traffic"
       ]
     },
     ec2: {
       cost: [
-        "Pay for running instances regardless of utilization",
-        "On-Demand, Reserved, Spot options",
-        "Cost-effective for consistent, high-utilization applications"
+        "Pay for running instances",
+        "Best for constant workloads"
       ],
       scalability: [
-        "Manual or auto-scaling groups required",
-        "Takes minutes to launch new instances",
-        "Can scale to thousands of instances"
+        "Manual / Auto Scaling Groups"
       ],
       operationalEffort: [
-        "High - full responsibility for OS, security patches, monitoring",
-        "Need to manage load balancers, health checks",
-        "Backup and disaster recovery planning"
+        "High – OS & infra management"
       ],
       learningCurve: [
-        "Moderate to high",
-        "Requires system administration knowledge",
-        "Networking, security groups, storage management"
+        "High"
       ],
       bestUseCases: [
-        "Legacy applications requiring specific OS configurations",
-        "Applications needing persistent local storage",
-        "Long-running processes or background jobs",
-        "High-performance computing workloads"
+        "Legacy apps",
+        "Long-running services"
       ]
     },
     ecs: {
       cost: [
-        "Pay for underlying EC2 instances or Fargate compute",
-        "ECS service itself is free",
-        "Fargate: pay per vCPU/memory allocated"
+        "Pay for containers / Fargate"
       ],
       scalability: [
-        "Automatic scaling based on metrics",
-        "Container-level scaling",
-        "Can scale to thousands of containers",
-        "Service discovery and load balancing built-in"
+        "Container-level scaling"
       ],
       operationalEffort: [
-        "Moderate - AWS manages container orchestration",
-        "Still need to manage container images and deployments",
-        "Less OS management with Fargate"
+        "Moderate – container management"
       ],
       learningCurve: [
-        "Moderate",
-        "Requires Docker and containerization knowledge",
-        "Understanding ECS tasks, services, clusters"
+        "Moderate"
       ],
       bestUseCases: [
-        "Microservices architectures",
-        "Applications already containerized",
-        "Consistent runtime environments",
-        "Gradual migration from monoliths"
+        "Microservices"
       ]
     }
   };
 }
 
-// -------------------- WEIGHTED RECOMMENDATION --------------------
-const serviceWeights = {
-  lambda: 0,
-  ec2: 0,
-  ecs: 0
-};
+// -------------------- FETCH KIRO RULES --------------------
+export async function fetchKiroRules() {
+  try {
+    const res = await fetch("/kiroRules.json");
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.error("Failed to load Kiro rules", e);
+    return [];
+  }
+}
 
-export function getRecommendation(inputs) {
-  // Reset weights
-  for (let key in serviceWeights) serviceWeights[key] = 0;
+// -------------------- RECOMMENDATION LOGIC --------------------
+export function getRecommendation(inputs, kiroRules = []) {
+  if (!Array.isArray(kiroRules) || kiroRules.length === 0) {
+    return {
+      service: "Loading...",
+      reason: "Evaluating rules",
+      reasoningPath: ""
+    };
+  }
 
-  // Assign weights based on input
-  const { trafficPattern, budgetFocus, teamExperience, architecture } = inputs;
+  const scores = { lambda: 0, ec2: 0, ecs: 0 };
+  const reasoningPath = [];
 
-  // Traffic pattern
-  if (["low", "spiky"].includes(trafficPattern)) serviceWeights.lambda += 2;
-  if (trafficPattern === "consistent") serviceWeights.ecs += 2;
-  if (trafficPattern === "high") serviceWeights.ec2 += 2;
+  kiroRules.forEach((rule) => {
+    let matchScore = 0;
 
-  // Budget
-  if (budgetFocus === "lowest") serviceWeights.lambda += 1;
-  if (budgetFocus === "predictable") serviceWeights.ec2 += 1;
+    Object.keys(rule.conditions || {}).forEach((key) => {
+      if (rule.conditions[key].includes(inputs[key])) {
+        matchScore += 1;
+      }
+    });
 
-  // Team experience
-  if (["beginner", "intermediate"].includes(teamExperience)) serviceWeights.lambda += 1;
-  if (teamExperience === "strong-devops") serviceWeights.ec2 += 1;
+    const serviceKey = rule.service.toLowerCase().includes("lambda")
+      ? "lambda"
+      : rule.service.toLowerCase().includes("ec2")
+      ? "ec2"
+      : "ecs";
 
-  // Architecture
-  if (architecture === "event-driven") serviceWeights.lambda += 2;
-  if (architecture === "microservices") serviceWeights.ecs += 2;
-  if (architecture === "monolith") serviceWeights.ec2 += 1;
+    scores[serviceKey] += matchScore;
 
-  // Determine recommendation
-  const maxWeight = Math.max(...Object.values(serviceWeights));
-  const recommendedService = Object.keys(serviceWeights).find(
-    (key) => serviceWeights[key] === maxWeight
+    if (matchScore > 0) {
+      reasoningPath.push(
+        `${rule.service} matched ${matchScore} condition(s)`
+      );
+    }
+  });
+
+  const winner = Object.keys(scores).reduce((a, b) =>
+    scores[a] > scores[b] ? a : b
   );
 
-  // Reasoning path
-  const reasoningPath = Object.entries(serviceWeights)
-    .map(([service, weight]) => `${service.toUpperCase()}: ${weight}`)
-    .join(" | ");
-
-  // Human-readable service name
   const serviceNames = {
     lambda: "AWS Lambda",
     ec2: "Amazon EC2",
@@ -142,7 +122,8 @@ export function getRecommendation(inputs) {
   };
 
   return {
-    service: serviceNames[recommendedService],
-    reason: `Based on weighted analysis: ${reasoningPath}`
+    service: serviceNames[winner],
+    reason: "Rule-based AI recommendation",
+    reasoningPath: reasoningPath.join(" | ")
   };
 }
