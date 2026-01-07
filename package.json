@@ -1,0 +1,16 @@
+{
+  "name": "decision_maker_assistant",
+  "version": "1.0.0",
+  "description": "This tool helps users compare AWS Lambda, EC2, and ECS\r by explaining trade-offs instead of giving a single answer.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.2.1"
+  }
+}
