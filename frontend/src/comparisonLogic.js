@@ -114,7 +114,7 @@ export function estimateCosts(inputs) {
 }
 
 // -------------------- RECOMMENDATION LOGIC --------------------
-export function getRecommendation(inputs, kiroRules = []) {
+export function getRecommendation(inputs, kiroRules = [], selectedServices = ['lambda', 'ec2', 'ecs', 'fargate']) {
   if (!Array.isArray(kiroRules) || kiroRules.length === 0) {
     return {
       top3: [],
@@ -162,8 +162,9 @@ export function getRecommendation(inputs, kiroRules = []) {
   const totalPossible = kiroRules.length;
   const maxScore = Math.max(...Object.values(scores));
 
-  // Create top3 with confidence
+  // Create top3 with confidence, filtered by selected services
   const top3 = Object.keys(scores)
+    .filter(key => selectedServices.includes(key))
     .map(key => ({
       service: serviceNames[key],
       score: scores[key],

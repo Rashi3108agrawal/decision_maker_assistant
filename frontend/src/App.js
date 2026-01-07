@@ -12,12 +12,16 @@ function App() {
   const [kiroRules, setKiroRules] = useState([]);
   const [aiExplanation, setAiExplanation] = useState("");
 
+  // Service selection state
+  const [selectedServices, setSelectedServices] = useState(['lambda', 'ec2', 'ecs', 'fargate']);
+  const allServices = ['lambda', 'ec2', 'ecs', 'fargate'];
+
   useEffect(() => {
     fetchKiroRules().then(setKiroRules);
   }, []);
 
   const recommendation = kiroRules.length
-    ? getRecommendation({ trafficPattern, budgetFocus, teamExperience, architecture }, kiroRules)
+    ? getRecommendation({ trafficPattern, budgetFocus, teamExperience, architecture }, kiroRules, selectedServices)
     : { top3: [], reasoningPath: "" };
 
   const costEstimates = estimateCosts({ trafficPattern, budgetFocus });
@@ -207,6 +211,50 @@ const handleInputChange = (setter) => (value) => {
             </div>
           </div>
 
+          {/* Service Selection */}
+          <div style={{ marginBottom: "40px", padding: "20px", background: "#f8f9fa", borderRadius: "10px" }}>
+            <h3 style={{ color: "#333", marginBottom: "15px", textAlign: "center" }}>Select Services to Compare</h3>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "15px"
+            }}>
+              {allServices.map((service) => (
+                <label key={service} style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "10px",
+                  background: "#fff",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  border: selectedServices.includes(service) ? "2px solid #667eea" : "2px solid #e0e0e0",
+                  transition: "all 0.3s ease"
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedServices.includes(service)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedServices([...selectedServices, service]);
+                      } else {
+                        setSelectedServices(selectedServices.filter(s => s !== service));
+                      }
+                    }}
+                    style={{ marginRight: "10px" }}
+                  />
+                  <span style={{ fontWeight: "bold", color: "#333" }}>
+                    {service === "lambda" ? "AWS Lambda" :
+                     service === "ec2" ? "Amazon EC2" :
+                     service === "ecs" ? "Amazon ECS" : "AWS Fargate"}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p style={{ fontSize: "0.8em", color: "#666", textAlign: "center", marginTop: "15px" }}>
+              Select 2-4 services to compare. Recommendations will be based on your selected options.
+            </p>
+          </div>
+
           {/* Cost Estimation */}
           <div style={{ marginBottom: "40px", padding: "20px", background: "#f8f9fa", borderRadius: "10px" }}>
             <h3 style={{ color: "#333", marginBottom: "15px", textAlign: "center" }}>Estimated Monthly Costs</h3>
@@ -215,7 +263,7 @@ const handleInputChange = (setter) => (value) => {
               gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
               gap: "15px"
             }}>
-              {Object.entries(costEstimates).map(([service, cost]) => (
+              {Object.entries(costEstimates).filter(([service]) => selectedServices.includes(service)).map(([service, cost]) => (
                 <div key={service} style={{
                   background: "#fff",
                   padding: "15px",
@@ -300,7 +348,7 @@ const handleInputChange = (setter) => (value) => {
           gap: "25px",
         }}
       >
-        {Object.keys(data).map((service) => {
+        {Object.keys(data).filter(service => selectedServices.includes(service)).map((service) => {
           const serviceName = service === "lambda" ? "AWS Lambda" : service === "ec2" ? "Amazon EC2" : service === "ecs" ? "Amazon ECS" : "AWS Fargate";
           const rec = recommendation?.top3?.find(rec => rec.service === serviceName);
           const isRecommended = !!rec;
